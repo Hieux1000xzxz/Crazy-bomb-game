@@ -1914,7 +1914,7 @@ MonoBehaviour:
   ExitToMenubtn: {fileID: 1072412377}
   endgameUI: {fileID: 1115702510}
   players: []
-  gameStopped: 0
+  gameStopped: 1
 --- !u!4 &276260531
 Transform:
   m_ObjectHideFlags: 0
