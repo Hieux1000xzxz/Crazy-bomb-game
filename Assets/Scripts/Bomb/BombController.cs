@@ -40,7 +40,7 @@ public class BombController : MonoBehaviour
             originalColor = bombColor.material.color; // Lưu lại màu gốc
         }
     }
-    
+
     private void OnEnable()
     {
         //khởi tạo bomb
@@ -63,9 +63,16 @@ public class BombController : MonoBehaviour
         rb.constraints = RigidbodyConstraints2D.FreezeRotation;
         this.transform.parent.GetComponent<Collider2D>().isTrigger = false;
 
+        // Reset các giá trị khác nếu cần
+        if (countdownCoroutine != null)
+        {
+            StopCoroutine(countdownCoroutine);
+            countdownCoroutine = null;
+        }
+        
         //StartCoroutine(CountdownAndExplode());
         //isOn = true;
-    } 
+    }
     public int RandomEff()
     {
         int ran = Random.Range(0, 3);
@@ -129,23 +136,86 @@ public class BombController : MonoBehaviour
     public void Explose()
     {
         Vector3 newposforExplose = new Vector3(transform.parent.position.x, transform.parent.position.y, transform.parent.position.z);
-        Instantiate(BombEffList[bombType], newposforExplose, transform.parent.rotation);
-        despawnBomb();
+
+        // Sử dụng EffectBombPooler nếu có
+        if (EffectBombPooler.instance != null)
+        {
+            //Debug.Log("Using EffectBombPooler to get effect bomb from pool");
+            GameObject effectBomb = EffectBombPooler.instance.GetEffectBombFromPool(bombType, newposforExplose, transform.parent.rotation);
+
+            if (effectBomb != null)
+            {
+                Debug.Log("Got effect bomb from pool: " + effectBomb.name);
+            }
+            else
+            {
+                Debug.LogWarning("Failed to get effect bomb from pool");
+            }
+        }
+        else
+        {
+            //Debug.Log("No EffectBombPooler found, using Instantiate");
+            // Nếu không có EffectBombPooler, sử dụng Instantiate như cũ
+            Instantiate(BombEffList[bombType], newposforExplose, transform.parent.rotation);
+        }
+
+        DespawnBomb();
     }
-    public void despawnBomb()
+    public void DespawnBomb()
     {
         // Đảm bảo đối tượng trở về Object Pool
-        if (this.transform.parent.parent == null)
+        if (transform.parent.parent == null)
         {
             if (BombSpawner.instance.PoolingObj != null)
             {
-                Debug.Log("Đảm bảo đối tượng trở về Object Pool");
-                this.transform.parent.parent = BombSpawner.instance.PoolingObj.transform;
+                //Debug.Log("Đảm bảo đối tượng trở về Object Pool");
+                transform.parent.parent = BombSpawner.instance.PoolingObj.transform;
             }
         }
         rb.bodyType = RigidbodyType2D.Dynamic;
         rb.constraints = RigidbodyConstraints2D.FreezeRotation;
-        this.transform.parent.gameObject.SetActive(false);
+        transform.parent.gameObject.SetActive(false);
     }
 
+    // Thêm phương thức ResetBomb để có thể gọi từ bên ngoài
+    public void ResetBomb()
+    {
+        // Reset thời gian đếm ngược
+        currentTime = startCountdowntime;
+        if (BombTimeText != null)
+        {
+            BombTimeText.text = currentTime.ToString();
+        }
+        
+        // Reset số lần va đập
+        bombLife = 3;
+        
+        // Reset trạng thái
+        isOn = false;
+        
+        // Hủy coroutine đếm ngược nếu đang chạy
+        if (countdownCoroutine != null)
+        {
+            StopCoroutine(countdownCoroutine);
+            countdownCoroutine = null;
+        }
+        
+        // Reset màu sắc
+        ResetColor();
+        
+        // Reset vật lý
+        if (rb != null)
+        {
+            rb.bodyType = RigidbodyType2D.Dynamic;
+            rb.constraints = RigidbodyConstraints2D.FreezeRotation;
+            rb.linearVelocity = Vector2.zero;
+        }
+        
+        // Reset collider
+        Collider2D collider = transform.parent.GetComponent<Collider2D>();
+        if (collider != null)
+        {
+            collider.isTrigger = false;
+        }
+    }
 }
