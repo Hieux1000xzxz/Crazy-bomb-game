@@ -56,5 +56,6 @@
         "temp/": true,
         "Temp/": true
     },
-    "dotnet.defaultSolution": "WhoIsTheCapTain.sln"
+    "dotnet.defaultSolution": "WhoIsTheCapTain.sln",
+    "dotnet.preferCSharpExtension": true
 }
